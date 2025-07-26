@@ -91,6 +91,59 @@ export const getUserChats = async (userId) => {
   return { data, error };
 };
 
+// Search and filter chats with database-level querying
+export const searchAndFilterChats = async (
+  userId,
+  searchQuery = "",
+  filters = {}
+) => {
+  let query = supabase
+    .from("chats")
+    .select(
+      `
+      *,
+      messages:messages(id, content, role)
+    `
+    )
+    .eq("user_id", userId);
+
+  // Apply search query if provided
+  if (searchQuery && searchQuery.trim()) {
+    // Search in chat titles
+    query = query.or(
+      `title.ilike.%${searchQuery}%,messages.content.ilike.%${searchQuery}%`
+    );
+  }
+
+  // Apply filters
+  if (filters.isFavorite !== null && filters.isFavorite !== undefined) {
+    query = query.eq("is_favorite", filters.isFavorite);
+  }
+
+  // Apply date range filter
+  if (filters.dateRange && filters.dateRange.start && filters.dateRange.end) {
+    query = query
+      .gte("created_at", filters.dateRange.start.toISOString())
+      .lte("created_at", filters.dateRange.end.toISOString());
+  }
+
+  // Order by updated_at
+  query = query.order("updated_at", { ascending: false });
+
+  const { data, error } = await query;
+
+  // Filter by message count on the client side (since it's complex to do in SQL)
+  let filteredData = data;
+  if (filters.hasMessages !== null && filters.hasMessages !== undefined) {
+    filteredData = data?.filter((chat) => {
+      const hasMessages = chat.messages && chat.messages.length > 0;
+      return filters.hasMessages ? hasMessages : !hasMessages;
+    });
+  }
+
+  return { data: filteredData, error };
+};
+
 export const getUserChatsWithMessages = async (userId) => {
   const { data, error } = await supabase
     .from("chats")

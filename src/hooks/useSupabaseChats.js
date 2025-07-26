@@ -8,6 +8,7 @@ import {
   getChatMessages,
   deleteMessage,
   updateMessage,
+  searchAndFilterChats,
 } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -340,6 +341,42 @@ export const useSupabaseChats = () => {
     []
   );
 
+  // Search and filter chats with database queries
+  const searchChats = useCallback(
+    async (searchQuery = "", filters = {}) => {
+      if (!user?.id) {
+        return { data: [], error: null };
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        const { data, error: searchError } = await searchAndFilterChats(
+          user.id,
+          searchQuery,
+          filters
+        );
+
+        if (searchError) {
+          throw searchError;
+        }
+
+        // Transform the data to match our local format
+        const transformedChats =
+          data?.map((chat) => transformChatData(chat, false)) || [];
+
+        return { data: transformedChats, error: null };
+      } catch (err) {
+        console.error("Error searching chats:", err);
+        setError(err.message);
+        return { data: [], error: err };
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user?.id, transformChatData]
+  );
+
   // Compatibility method for setting chats (like useState)
   const setChatsCompat = useCallback((newChatsOrUpdater) => {
     if (typeof newChatsOrUpdater === "function") {
@@ -362,6 +399,7 @@ export const useSupabaseChats = () => {
     loadingMessages,
     refreshChats: loadChats,
     loadChatMessages,
+    searchChats,
     createNewChat,
     updateChat: updateChatInSupabase,
     deleteChat: deleteChatFromSupabase,
