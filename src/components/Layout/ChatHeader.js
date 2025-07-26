@@ -10,7 +10,11 @@ import {
   useTheme,
   useMediaQuery,
 } from "@mui/material";
-import { Menu as MenuIcon, Schedule as TimeIcon } from "@mui/icons-material";
+import {
+  Menu as MenuIcon,
+  Schedule as TimeIcon,
+  Description,
+} from "@mui/icons-material";
 import { formatTimestamp } from "../../utils/formatters";
 import ModelSelector from "../Chat/ModelSelector";
 
@@ -24,6 +28,7 @@ const ChatHeader = ({
   isLoadingMessages,
   selectedModel,
   onModelChange,
+  selectedDocument,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -100,6 +105,25 @@ const ChatHeader = ({
               zIndex: 1,
             }}
           >
+            {selectedDocument && (
+              <Chip
+                icon={<Description />}
+                label={`📄 ${selectedDocument.original_name}`}
+                size="small"
+                variant="outlined"
+                color="primary"
+                sx={{
+                  fontSize: "0.75rem",
+                  height: 24,
+                  maxWidth: isMobile ? "120px" : "200px",
+                  "& .MuiChip-label": {
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  },
+                }}
+              />
+            )}
             {isGuest && (
               <Chip
                 label="Guest Mode"
@@ -150,45 +174,23 @@ const ChatHeader = ({
             )}
           </Stack>
 
-          {/* Fixed Right Section: Model Selector + Time */}
+          {/* Right Section: Model Selector + Documents Button */}
           <Stack
             direction="row"
             spacing={1}
             alignItems="center"
             sx={{
+              flex: 0,
               position: "absolute",
               right: 0,
-              top: "50%",
-              transform: "translateY(-50%)",
-              zIndex: 2,
+              zIndex: 1,
             }}
           >
-            {/* Model Selector (Desktop only) */}
-            {!isMobile && currentChat && (
-              <ModelSelector
-                selectedModel={selectedModel}
-                onModelChange={onModelChange}
-                disabled={isStreaming}
-              />
-            )}
-
-            {/* Time Display */}
-            {messagesCount > 0 && (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 0.5,
-                  whiteSpace: "nowrap",
-                  minWidth: "100px",
-                }}
-              >
-                <TimeIcon sx={{ fontSize: 14 }} />
-                {formatTimestamp(currentChat?.updatedAt)}
-              </Typography>
-            )}
+            <ModelSelector
+              selectedModel={selectedModel}
+              onModelChange={onModelChange}
+              isMobile={isMobile}
+            />
           </Stack>
         </Stack>
 

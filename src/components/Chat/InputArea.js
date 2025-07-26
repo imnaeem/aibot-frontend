@@ -12,12 +12,15 @@ import {
   InputAdornment,
   useTheme,
   useMediaQuery,
+  Tooltip,
+  Badge,
 } from "@mui/material";
 import {
   Send as SendIcon,
   Edit as EditIcon,
   Close as CloseIcon,
   Save as SaveIcon,
+  Folder as FolderIcon,
 } from "@mui/icons-material";
 import { KEYBOARD_SHORTCUTS } from "../../utils/constants";
 
@@ -30,6 +33,8 @@ const InputArea = ({
   textareaRef,
   editingMessage,
   onCancelEdit,
+  onOpenDocuments,
+  documentCount = 0,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -121,6 +126,32 @@ const InputArea = ({
               },
             }}
           />
+          {/* Documents Button */}
+          <Tooltip title="Documents">
+            <Badge badgeContent={documentCount} color="primary">
+              <IconButton
+                onClick={onOpenDocuments}
+                disabled={isLoading}
+                sx={{
+                  backgroundColor: "#f5f5f5",
+                  color: "#666",
+                  width: isMobile ? 48 : 44,
+                  height: isMobile ? 48 : 44,
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    backgroundColor: "#e0e0e0",
+                    transform: "scale(1.05)",
+                  },
+                  "&:disabled": {
+                    backgroundColor: "#e0e0e0",
+                    color: "#9e9e9e",
+                  },
+                }}
+              >
+                <FolderIcon sx={{ fontSize: 20 }} />
+              </IconButton>
+            </Badge>
+          </Tooltip>
           <IconButton
             onClick={handleSendClick}
             disabled={!inputValue.trim() || isLoading}

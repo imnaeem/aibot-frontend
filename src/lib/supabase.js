@@ -273,3 +273,106 @@ export const updateMessage = async (messageId, content, metadata = {}) => {
 
   return { data, error };
 };
+
+// Document management functions
+export const uploadDocumentToStorage = async (file, chatId, userId) => {
+  const fileExt = file.name.split(".").pop();
+  // Use user ID as the folder structure for better RLS compatibility
+  const fileName = `${userId}/${chatId}/${Date.now()}-${Math.random()
+    .toString(36)
+    .substring(2)}.${fileExt}`;
+
+  const { data, error } = await supabase.storage
+    .from("aibot")
+    .upload(fileName, file);
+
+  if (error) {
+    throw error;
+  }
+
+  return { data, fileName };
+};
+
+export const createDocumentRecord = async (documentData) => {
+  const { data, error } = await supabase
+    .from("documents")
+    .insert([documentData])
+    .select()
+    .single();
+
+  return { data, error };
+};
+
+export const getChatDocuments = async (chatId) => {
+  const { data, error } = await supabase
+    .from("documents")
+    .select("*")
+    .eq("chat_id", chatId)
+    .order("created_at", { ascending: false });
+
+  return { data, error };
+};
+
+export const getUserDocuments = async (userId) => {
+  const { data, error } = await supabase
+    .from("documents")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  return { data, error };
+};
+
+export const deleteDocument = async (documentId) => {
+  // First get the document to get the file path
+  const { data: document, error: fetchError } = await supabase
+    .from("documents")
+    .select("file_path")
+    .eq("id", documentId)
+    .single();
+
+  if (fetchError) {
+    throw fetchError;
+  }
+
+  // Delete from storage
+  const { error: storageError } = await supabase.storage
+    .from("aibot")
+    .remove([document.file_path]);
+
+  if (storageError) {
+    console.error("Error deleting from storage:", storageError);
+  }
+
+  // Delete from database
+  const { error: dbError } = await supabase
+    .from("documents")
+    .delete()
+    .eq("id", documentId);
+
+  return { error: dbError };
+};
+
+export const getDocumentContent = async (documentId) => {
+  const { data, error } = await supabase
+    .from("documents")
+    .select("extracted_text, original_name")
+    .eq("id", documentId)
+    .single();
+
+  return { data, error };
+};
+
+export const updateDocumentText = async (documentId, extractedText) => {
+  const { data, error } = await supabase
+    .from("documents")
+    .update({
+      extracted_text: extractedText,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", documentId)
+    .select()
+    .single();
+
+  return { data, error };
+};
