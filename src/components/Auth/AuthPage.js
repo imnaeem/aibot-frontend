@@ -126,7 +126,7 @@ const AuthPage = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: process.env.REACT_APP_URI,
         },
       });
       if (error) throw error;
