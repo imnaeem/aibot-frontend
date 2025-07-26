@@ -76,6 +76,7 @@ const ChatSidebar = ({
   user,
   onSignOut,
   updateUser,
+  onResetFilters,
 }) => {
   const { isGuest, exitGuestMode } = useAuth();
   const theme = useTheme();
@@ -166,6 +167,33 @@ const ChatSidebar = ({
   useEffect(() => {
     setVisibleChatsCount(10);
   }, [searchQuery, appliedFilters]);
+
+  // Handle external filter reset (e.g., from New Chat button)
+  useEffect(() => {
+    if (onResetFilters) {
+      const resetAllFilters = () => {
+        setSearchQuery("");
+        setLocalFilters({
+          dateRange: null,
+          dateRangeType: null,
+          isFavorite: null,
+          hasMessages: null,
+          hasAttachments: null,
+        });
+        setAppliedFilters({
+          dateRange: null,
+          dateRangeType: null,
+          isFavorite: null,
+          hasMessages: null,
+          hasAttachments: null,
+        });
+        setVisibleChatsCount(10);
+      };
+
+      // Store the reset function in the parent component
+      onResetFilters(resetAllFilters);
+    }
+  }, [onResetFilters, setSearchQuery]);
 
   const handleEditProfile = () => {
     setProfileDialogOpen(true);
@@ -316,6 +344,14 @@ const ChatSidebar = ({
       hasMessages: null,
       hasAttachments: null,
     });
+    setAppliedFilters({
+      dateRange: null,
+      dateRangeType: null,
+      isFavorite: null,
+      hasMessages: null,
+      hasAttachments: null,
+    });
+    setVisibleChatsCount(10); // Reset pagination
   };
 
   const handleDateRangeSelect = (range) => {

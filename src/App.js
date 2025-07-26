@@ -167,8 +167,12 @@ function ChatApp() {
 
   // Create new chat with current model
   const handleCreateNewChat = useCallback(async () => {
+    // Reset filters and search when creating a new chat
+    if (uiState.resetFilters) {
+      uiState.resetFilters();
+    }
     return await chatManagement.createNewChat(selectedModel);
-  }, [chatManagement.createNewChat, selectedModel]);
+  }, [chatManagement.createNewChat, selectedModel, uiState.resetFilters]);
 
   // Keyboard shortcuts
   useKeyboardShortcuts({
@@ -421,6 +425,7 @@ function ChatApp() {
         selectedDocument={selectedDocument}
         onSelectDocument={handleSelectDocument}
         onDeleteDocument={handleDeleteDocument}
+        onResetFilters={uiState.setResetFunction}
       />
 
       <ChatContextMenu
