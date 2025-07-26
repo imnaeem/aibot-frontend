@@ -9,6 +9,7 @@ import {
   CircularProgress,
   Chip,
   Box,
+  InputAdornment,
   useTheme,
   useMediaQuery,
 } from "@mui/material";
@@ -105,13 +106,18 @@ const InputArea = ({
             sx={{
               flex: 1,
               "& .MuiOutlinedInput-root": {
-                borderRadius: 3,
-                height: isMobile ? 48 : 44,
+                borderRadius: 2,
+                minHeight: isMobile ? 48 : 44,
+                alignItems: "flex-end",
               },
               "& .MuiInputBase-input": {
                 fontSize: isMobile ? "1rem" : "0.875rem",
                 lineHeight: 1.5,
-                padding: isMobile ? "12px 14px" : "8.5px 14px",
+                padding: isMobile ? "12px 14px" : "4px 14px",
+                resize: "none",
+              },
+              "& .MuiInputBase-inputMultiline": {
+                overflow: "auto !important",
               },
             }}
           />

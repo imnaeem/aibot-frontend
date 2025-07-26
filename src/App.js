@@ -55,6 +55,7 @@ function ChatApp() {
     loading: chatsLoading,
     loadingMessages,
     loadChatMessages,
+    searchChats,
     createNewChat: createNewSupabaseChat,
     updateChat: updateSupabaseChat,
     deleteChat: deleteSupabaseChat,
@@ -68,6 +69,7 @@ function ChatApp() {
         loading: false,
         loadingMessages: null,
         loadChatMessages: null,
+        searchChats: null,
         createNewChat: null,
         updateChat: null,
         deleteChat: null,
@@ -135,9 +137,9 @@ function ChatApp() {
   useEffect(() => {
     const currentChat = chatManagement.getCurrentChat();
     if (currentChat) {
-      document.title = `${currentChat.title} - ChatGPT Clone`;
+      document.title = `${currentChat.title} - AI Bot`;
     } else {
-      document.title = "ChatGPT Clone";
+      document.title = "AI Bot";
     }
   }, [currentChatId, chats, chatManagement]);
 
@@ -327,6 +329,7 @@ function ChatApp() {
         user={user}
         onSignOut={signOut}
         updateUser={updateUser}
+        searchChats={isGuest ? null : searchChats}
       />
 
       <ChatContextMenu
