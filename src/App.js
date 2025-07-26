@@ -87,21 +87,12 @@ function ChatApp() {
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
   const [uploadedDocuments, setUploadedDocuments] = useState([]);
   const [selectedDocument, setSelectedDocument] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
   const [documentPanelOpen, setDocumentPanelOpen] = useState(false);
   const [documentCount, setDocumentCount] = useState(0);
   const textareaRef = useRef(null);
   const editInputRef = useRef(null);
 
-  const { currentChatId, setCurrentChatIdWithURL, clearChatFromURL } =
-    useUrlParams();
-
-  // Debug logging
-  console.log("🔍 App.js - Chat Management Setup:", {
-    isGuest,
-    hasCreateNewSupabaseChat: !!createNewSupabaseChat,
-    user: user?.id || "no-user",
-  });
+  const { currentChatId, setCurrentChatIdWithURL } = useUrlParams();
 
   const chatManagement = useChatManagement(
     chats,
@@ -264,16 +255,13 @@ function ChatApp() {
     // Document deletion is now handled in DocumentPanel
   };
 
-  const handleDeleteDocument = (documentId) => {
-    setDocumentCount((prev) => Math.max(0, prev - 1));
-    // Document deletion is now handled in DocumentPanel
+  const handleDeleteDocument = ({ count }) => {
+    setDocumentCount(count);
   };
 
   // Update document count when documents change
-  const handleDocumentUpload = (newDocument) => {
-    setDocumentCount((prev) => prev + 1);
-    // Document upload is now handled in DocumentPanel
-    console.log("New document uploaded:", newDocument);
+  const handleDocumentUpload = ({ count }) => {
+    setDocumentCount(count);
   };
 
   const handleOpenDocuments = () => {
@@ -283,25 +271,6 @@ function ChatApp() {
   const handleCloseDocuments = () => {
     setDocumentPanelOpen(false);
   };
-
-  // Load document count for current chat
-  useEffect(() => {
-    if (currentChatId && user && !isGuest) {
-      const loadDocumentCount = async () => {
-        try {
-          const { data, error } = await getChatDocuments(currentChatId);
-          if (!error && data) {
-            setDocumentCount(data.length);
-          }
-        } catch (error) {
-          console.error("Error loading document count:", error);
-        }
-      };
-      loadDocumentCount();
-    } else {
-      setDocumentCount(0);
-    }
-  }, [currentChatId, user, isGuest]);
 
   const handleModelChange = useCallback(
     async (modelId) => {
@@ -394,6 +363,11 @@ function ChatApp() {
 
   useEffect(() => {
     setSelectedDocument(null);
+    // Close document panel and reset count when no chat is selected
+    if (!currentChatId) {
+      setDocumentPanelOpen(false);
+      setDocumentCount(0);
+    }
   }, [currentChatId]);
 
   if (loading) {
@@ -527,7 +501,7 @@ function ChatApp() {
             <InputArea
               inputValue={inputValue}
               onInputChange={setInputValue}
-              onSendMessage={() => handleSendMessage()}
+              onSendMessage={handleSendMessage}
               isLoading={messageSending.isLoading}
               sidebarOpen={uiState.sidebarOpen}
               textareaRef={textareaRef}
@@ -535,6 +509,9 @@ function ChatApp() {
               onCancelEdit={handleCancelEdit}
               onOpenDocuments={handleOpenDocuments}
               documentCount={documentCount}
+              currentChatId={currentChatId}
+              isGuest={isGuest}
+              selectedDocument={selectedDocument}
             />
           </Box>
 

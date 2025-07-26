@@ -25,6 +25,9 @@ import {
   CheckCircle as SelectedIcon,
   AttachFile as AttachFileIcon,
   Close as CloseIcon,
+  OpenInNew as OpenInNewIcon,
+  Image as ImageIcon,
+  Collections as CollectionsIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../../contexts/AuthContext";
 import {
@@ -33,15 +36,40 @@ import {
   getChatDocuments,
   deleteDocument,
   getDocumentContent,
+  supabase,
 } from "../../lib/supabase";
 import { processDocument } from "../../services/chatService";
 
 const getFileIcon = (mimeType) => {
-  if (mimeType.includes("pdf")) return <PdfIcon />;
+  if (mimeType.includes("pdf"))
+    return (
+      <Typography sx={{ fontSize: 20, color: "primary.main" }}>📄</Typography>
+    );
   if (mimeType.includes("word") || mimeType.includes("document"))
-    return <DocIcon />;
-  if (mimeType.includes("text")) return <TextIcon />;
-  return <DocumentIcon />;
+    return (
+      <Typography sx={{ fontSize: 20, color: "primary.main" }}>📋</Typography>
+    );
+  if (mimeType.includes("text"))
+    return (
+      <Typography sx={{ fontSize: 20, color: "primary.main" }}>📄</Typography>
+    );
+  if (mimeType.startsWith("image/"))
+    return (
+      <Typography sx={{ fontSize: 20, color: "primary.main" }}>📷</Typography>
+    );
+  return (
+    <Typography sx={{ fontSize: 20, color: "primary.main" }}>📁</Typography>
+  );
+};
+
+const isImageFile = (mimeType) => {
+  return mimeType && mimeType.startsWith("image/");
+};
+
+const categorizeDocuments = (documents) => {
+  const images = documents.filter((doc) => isImageFile(doc.mime_type));
+  const otherDocs = documents.filter((doc) => !isImageFile(doc.mime_type));
+  return { images, otherDocs };
 };
 
 const formatFileSize = (bytes) => {
@@ -50,6 +78,29 @@ const formatFileSize = (bytes) => {
   const sizes = ["Bytes", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+};
+
+const getDocumentUrl = (filePath) => {
+  if (!filePath) return null;
+  // Create a signed URL that expires in 1 hour
+  return supabase.storage
+    .from("aibot")
+    .createSignedUrl(filePath, 3600) // 1 hour = 3600 seconds
+    .then(({ data, error }) => {
+      if (error) {
+        console.error("Error creating signed URL:", error);
+        return null;
+      }
+      return data.signedUrl;
+    });
+};
+
+const handleOpenDocument = (doc) => {
+  getDocumentUrl(doc.file_path).then((url) => {
+    if (url) {
+      window.open(url, "_blank");
+    }
+  });
 };
 
 const DocumentPanel = ({
@@ -69,6 +120,7 @@ const DocumentPanel = ({
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [processingDocumentId, setProcessingDocumentId] = useState(null);
+  const [deletingDocumentId, setDeletingDocumentId] = useState(null);
   const fileInputRef = useRef();
 
   // Load documents for current chat
@@ -84,6 +136,10 @@ const DocumentPanel = ({
       const { data, error } = await getChatDocuments(currentChatId);
       if (error) throw error;
       setDocuments(data || []);
+      // Update document count
+      if (onDocumentUpload) {
+        onDocumentUpload({ count: (data || []).length });
+      }
     } catch (error) {
       console.error("Error loading documents:", error);
     } finally {
@@ -124,7 +180,7 @@ const DocumentPanel = ({
 
       // Notify parent component
       if (onDocumentUpload) {
-        onDocumentUpload(newDocument);
+        onDocumentUpload({ count: documents.length + 1 });
       }
 
       console.log("Document uploaded successfully:", newDocument);
@@ -172,7 +228,7 @@ const DocumentPanel = ({
 
       // Notify parent component
       if (onDocumentUpload) {
-        onDocumentUpload(newDocument);
+        onDocumentUpload({ count: documents.length + 1 });
       }
 
       console.log("Document uploaded successfully:", newDocument);
@@ -187,6 +243,7 @@ const DocumentPanel = ({
   };
 
   const handleDeleteDocument = async (documentId) => {
+    setDeletingDocumentId(documentId);
     try {
       const { error } = await deleteDocument(documentId);
       if (error) throw error;
@@ -201,13 +258,15 @@ const DocumentPanel = ({
 
       // Notify parent component to update document count
       if (onDeleteDocument) {
-        onDeleteDocument(documentId);
+        onDeleteDocument({ count: documents.length - 1 });
       }
 
       console.log("Document deleted successfully");
     } catch (error) {
       console.error("Delete failed:", error);
       alert(`Delete failed: ${error.message}`);
+    } finally {
+      setDeletingDocumentId(null);
     }
   };
 
@@ -245,7 +304,7 @@ const DocumentPanel = ({
         console.error("Error loading document content:", error);
         // Show error to user
         alert(`Failed to process document: ${error.message}`);
-        onSelectDocument(document);
+        // Do not select the document if processing fails
       } finally {
         setProcessingDocumentId(null);
       }
@@ -347,104 +406,313 @@ const DocumentPanel = ({
               </Typography>
             </Box>
           ) : (
-            <List sx={{ p: 0 }}>
-              {documents.map((doc) => (
-                <ListItem
-                  key={doc.id}
-                  disablePadding
-                  sx={{
-                    mb: 1,
-                    borderRadius: 1,
-                    backgroundColor:
-                      selectedDocument?.id === doc.id
-                        ? "rgba(25, 118, 210, 0.08)"
-                        : "transparent",
-                  }}
-                >
-                  <ListItemButton
-                    onClick={() => handleSelectDocument(doc)}
-                    sx={{
-                      mx: 0,
-                      borderRadius: 1,
-                      "&:hover": {
-                        backgroundColor: "rgba(0, 0, 0, 0.04)",
-                      },
-                    }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 40 }}>
-                      {processingDocumentId === doc.id ? (
-                        <CircularProgress size={20} />
-                      ) : selectedDocument?.id === doc.id ? (
-                        <SelectedIcon color="primary" />
-                      ) : (
-                        getFileIcon(doc.mime_type)
-                      )}
-                    </ListItemIcon>
-
-                    <ListItemText
-                      primary={
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontWeight:
-                              selectedDocument?.id === doc.id ? 600 : 400,
-                            fontSize: "0.875rem",
-                            color:
-                              processingDocumentId === doc.id
-                                ? "text.secondary"
-                                : "inherit",
-                          }}
-                        >
-                          {processingDocumentId === doc.id
-                            ? `${doc.original_name} (Processing...)`
-                            : doc.original_name}
-                        </Typography>
-                      }
-                      secondary={
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1,
-                            mt: 0.5,
-                          }}
-                        >
-                          <Chip
-                            label={formatFileSize(doc.file_size)}
-                            size="small"
-                            variant="outlined"
-                            sx={{ fontSize: "0.75rem", height: 20 }}
-                          />
-                          <Typography variant="caption" color="text.secondary">
-                            {new Date(doc.created_at).toLocaleDateString()}
-                          </Typography>
-                        </Box>
-                      }
-                    />
-
-                    <Tooltip title="Delete document">
-                      <IconButton
-                        size="small"
-                        disabled={processingDocumentId === doc.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteDocument(doc.id);
-                        }}
+            (() => {
+              const { images, otherDocs } = categorizeDocuments(documents);
+              return (
+                <>
+                  {/* Documents Section */}
+                  {otherDocs.length > 0 && (
+                    <>
+                      <Typography
+                        variant="subtitle2"
+                        fontWeight={600}
+                        color="text.primary"
                         sx={{
-                          opacity: 0.7,
-                          "&:hover": {
-                            opacity: 1,
-                            color: "error.main",
-                          },
+                          mb: 1.5,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
                         }}
                       >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </ListItemButton>
-                </ListItem>
-              ))}
-            </List>
+                        <Typography sx={{ fontSize: 18 }}>📚</Typography>
+                        Documents ({otherDocs.length})
+                      </Typography>
+                      <List sx={{ p: 0, mb: 2 }}>
+                        {otherDocs.map((doc) => (
+                          <ListItem
+                            key={doc.id}
+                            disablePadding
+                            sx={{
+                              mb: 1,
+                              borderRadius: 1,
+                              backgroundColor:
+                                selectedDocument?.id === doc.id
+                                  ? "rgba(25, 118, 210, 0.08)"
+                                  : "transparent",
+                            }}
+                          >
+                            <ListItemButton
+                              onClick={() => handleSelectDocument(doc)}
+                              sx={{
+                                mx: 0,
+                                borderRadius: 1,
+                                "&:hover": {
+                                  backgroundColor: "rgba(0, 0, 0, 0.04)",
+                                },
+                              }}
+                            >
+                              <ListItemIcon sx={{ minWidth: 40 }}>
+                                {processingDocumentId === doc.id ? (
+                                  <CircularProgress size={20} />
+                                ) : selectedDocument?.id === doc.id ? (
+                                  <SelectedIcon color="primary" />
+                                ) : (
+                                  getFileIcon(doc.mime_type)
+                                )}
+                              </ListItemIcon>
+
+                              <ListItemText
+                                primary={
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontWeight:
+                                        selectedDocument?.id === doc.id
+                                          ? 600
+                                          : 400,
+                                      fontSize: "0.875rem",
+                                      color:
+                                        processingDocumentId === doc.id
+                                          ? "text.secondary"
+                                          : "inherit",
+                                    }}
+                                  >
+                                    {processingDocumentId === doc.id
+                                      ? `${doc.original_name} (Processing...)`
+                                      : doc.original_name}
+                                  </Typography>
+                                }
+                                secondary={
+                                  <Box
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 1,
+                                      mt: 0.5,
+                                    }}
+                                  >
+                                    <Chip
+                                      label={formatFileSize(doc.file_size)}
+                                      size="small"
+                                      variant="outlined"
+                                      sx={{ fontSize: "0.75rem", height: 20 }}
+                                    />
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                    >
+                                      {new Date(
+                                        doc.created_at
+                                      ).toLocaleDateString()}
+                                    </Typography>
+                                  </Box>
+                                }
+                              />
+
+                              <Tooltip title="Delete document">
+                                <IconButton
+                                  size="small"
+                                  disabled={processingDocumentId === doc.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteDocument(doc.id);
+                                  }}
+                                  sx={{
+                                    opacity: 1,
+                                    "&:hover": {
+                                      opacity: 1,
+                                      color: "error.main",
+                                    },
+                                  }}
+                                >
+                                  {deletingDocumentId === doc.id ? (
+                                    <CircularProgress size={18} />
+                                  ) : (
+                                    <DeleteIcon fontSize="small" />
+                                  )}
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Open in new tab">
+                                <IconButton
+                                  size="small"
+                                  disabled={processingDocumentId === doc.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenDocument(doc);
+                                  }}
+                                  sx={{
+                                    opacity: 1,
+                                    "&:hover": {
+                                      opacity: 1,
+                                      color: "primary.main",
+                                    },
+                                  }}
+                                >
+                                  <OpenInNewIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </ListItemButton>
+                          </ListItem>
+                        ))}
+                      </List>
+                    </>
+                  )}
+
+                  {/* Divider between sections */}
+                  {otherDocs.length > 0 && images.length > 0 && (
+                    <Divider sx={{ my: 2 }} />
+                  )}
+
+                  {/* Images Section */}
+                  {images.length > 0 && (
+                    <>
+                      <Typography
+                        variant="subtitle2"
+                        fontWeight={600}
+                        color="text.primary"
+                        sx={{
+                          mb: 1.5,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                        }}
+                      >
+                        <Typography sx={{ fontSize: 18 }}>🖼️</Typography>
+                        Images ({images.length})
+                      </Typography>
+                      <List sx={{ p: 0 }}>
+                        {images.map((doc) => (
+                          <ListItem
+                            key={doc.id}
+                            disablePadding
+                            sx={{
+                              mb: 1,
+                              borderRadius: 1,
+                              backgroundColor:
+                                selectedDocument?.id === doc.id
+                                  ? "rgba(25, 118, 210, 0.08)"
+                                  : "transparent",
+                            }}
+                          >
+                            <ListItemButton
+                              onClick={() => handleSelectDocument(doc)}
+                              sx={{
+                                mx: 0,
+                                borderRadius: 1,
+                                "&:hover": {
+                                  backgroundColor: "rgba(0, 0, 0, 0.04)",
+                                },
+                              }}
+                            >
+                              <ListItemIcon sx={{ minWidth: 40 }}>
+                                {processingDocumentId === doc.id ? (
+                                  <CircularProgress size={20} />
+                                ) : selectedDocument?.id === doc.id ? (
+                                  <SelectedIcon color="primary" />
+                                ) : (
+                                  getFileIcon(doc.mime_type)
+                                )}
+                              </ListItemIcon>
+
+                              <ListItemText
+                                primary={
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontWeight:
+                                        selectedDocument?.id === doc.id
+                                          ? 600
+                                          : 400,
+                                      fontSize: "0.875rem",
+                                      color:
+                                        processingDocumentId === doc.id
+                                          ? "text.secondary"
+                                          : "inherit",
+                                    }}
+                                  >
+                                    {processingDocumentId === doc.id
+                                      ? `${doc.original_name} (Processing...)`
+                                      : doc.original_name}
+                                  </Typography>
+                                }
+                                secondary={
+                                  <Box
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 1,
+                                      mt: 0.5,
+                                    }}
+                                  >
+                                    <Chip
+                                      label={formatFileSize(doc.file_size)}
+                                      size="small"
+                                      variant="outlined"
+                                      sx={{ fontSize: "0.75rem", height: 20 }}
+                                    />
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                    >
+                                      {new Date(
+                                        doc.created_at
+                                      ).toLocaleDateString()}
+                                    </Typography>
+                                  </Box>
+                                }
+                              />
+
+                              <Tooltip title="Delete document">
+                                <IconButton
+                                  size="small"
+                                  disabled={processingDocumentId === doc.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteDocument(doc.id);
+                                  }}
+                                  sx={{
+                                    opacity: 1,
+                                    "&:hover": {
+                                      opacity: 1,
+                                      color: "error.main",
+                                    },
+                                  }}
+                                >
+                                  {deletingDocumentId === doc.id ? (
+                                    <CircularProgress size={18} />
+                                  ) : (
+                                    <DeleteIcon fontSize="small" />
+                                  )}
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Open in new tab">
+                                <IconButton
+                                  size="small"
+                                  disabled={processingDocumentId === doc.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenDocument(doc);
+                                  }}
+                                  sx={{
+                                    opacity: 1,
+                                    "&:hover": {
+                                      opacity: 1,
+                                      color: "primary.main",
+                                    },
+                                  }}
+                                >
+                                  <OpenInNewIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </ListItemButton>
+                          </ListItem>
+                        ))}
+                      </List>
+                    </>
+                  )}
+                </>
+              );
+            })()
           )}
         </Box>
       </Box>

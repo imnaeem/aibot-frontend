@@ -97,6 +97,12 @@ export const searchAndFilterChats = async (
   searchQuery = "",
   filters = {}
 ) => {
+  console.log("🔍 searchAndFilterChats called with:", {
+    userId,
+    searchQuery,
+    filters,
+  });
+
   let query = supabase
     .from("chats")
     .select(
@@ -127,15 +133,46 @@ export const searchAndFilterChats = async (
       .lte("created_at", filters.dateRange.end.toISOString());
   }
 
+  // Apply attachments filter using subquery
+  if (filters.hasAttachments !== null && filters.hasAttachments !== undefined) {
+    // Get all chat IDs that have documents
+    const { data: docsWithChats } = await supabase
+      .from("documents")
+      .select("chat_id")
+      .eq("user_id", userId);
+
+    const chatIdsWithDocs = docsWithChats?.map((doc) => doc.chat_id) || [];
+
+    if (filters.hasAttachments) {
+      // Chats WITH attachments
+      if (chatIdsWithDocs.length > 0) {
+        query = query.in("id", chatIdsWithDocs);
+      } else {
+        // No documents exist, so no chats have attachments
+        query = query.eq("id", "no-chats-will-match-this");
+      }
+    } else {
+      // Chats WITHOUT attachments
+      if (chatIdsWithDocs.length > 0) {
+        query = query.not(
+          "id",
+          "in",
+          `(${chatIdsWithDocs.map((id) => `"${id}"`).join(",")})`
+        );
+      }
+      // If no documents exist, all chats are "without attachments" (no filter needed)
+    }
+  }
+
   // Order by updated_at
   query = query.order("updated_at", { ascending: false });
 
   const { data, error } = await query;
+  let filteredData = data;
 
   // Filter by message count on the client side (since it's complex to do in SQL)
-  let filteredData = data;
   if (filters.hasMessages !== null && filters.hasMessages !== undefined) {
-    filteredData = data?.filter((chat) => {
+    filteredData = filteredData?.filter((chat) => {
       const hasMessages = chat.messages && chat.messages.length > 0;
       return filters.hasMessages ? hasMessages : !hasMessages;
     });

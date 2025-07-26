@@ -29,12 +29,7 @@ export const useChatManagement = (
   const createNewChat = useCallback(
     async (selectedModel = "llama-2-7b") => {
       try {
-        console.log("🔍 createNewChat called with:", {
-          selectedModel,
-          hasCreateSupabaseChat: !!createSupabaseChat,
-        });
         if (createSupabaseChat) {
-          console.log("✅ Using Supabase chat creation");
           // Use Supabase to create chat
           const newChat = await createSupabaseChat("New Chat", selectedModel);
           flushSync(() => {

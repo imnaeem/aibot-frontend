@@ -100,12 +100,14 @@ const ChatSidebar = ({
     dateRangeType: null, // 'today', 'week', 'month'
     isFavorite: null, // true, false, or null for all
     hasMessages: null, // true, false, or null for all
+    hasAttachments: null, // true, false, or null for all
   });
   const [appliedFilters, setAppliedFilters] = useState({
     dateRange: null,
     dateRangeType: null,
     isFavorite: null,
     hasMessages: null,
+    hasAttachments: null,
   });
 
   // Database search results state
@@ -132,6 +134,11 @@ const ChatSidebar = ({
         setSearchResults(null);
         setIsSearching(false);
         return;
+      }
+
+      // Unselect current chat when search/filters are active
+      if (currentChatId) {
+        onSelectChat(null);
       }
 
       try {
@@ -287,6 +294,7 @@ const ChatSidebar = ({
     appliedFilters.dateRange,
     appliedFilters.isFavorite,
     appliedFilters.hasMessages,
+    appliedFilters.hasAttachments,
   ].filter((value) => value !== null && value !== undefined).length;
 
   // Filter handlers
@@ -294,6 +302,10 @@ const ChatSidebar = ({
     setAppliedFilters({ ...localFilters });
     setFiltersOpen(false);
     setVisibleChatsCount(10); // Reset pagination when filters change
+    // Unselect current chat when filters are applied
+    if (currentChatId) {
+      onSelectChat(null);
+    }
   };
 
   const handleClearFilters = () => {
@@ -302,6 +314,7 @@ const ChatSidebar = ({
       dateRangeType: null,
       isFavorite: null,
       hasMessages: null,
+      hasAttachments: null,
     });
   };
 
@@ -615,12 +628,14 @@ const ChatSidebar = ({
                           dateRangeType: null,
                           isFavorite: null,
                           hasMessages: null,
+                          hasAttachments: null,
                         });
                         setLocalFilters({
                           dateRange: null,
                           dateRangeType: null,
                           isFavorite: null,
                           hasMessages: null,
+                          hasAttachments: null,
                         });
                       }}
                       sx={{ textTransform: "none" }}
@@ -670,12 +685,14 @@ const ChatSidebar = ({
                         dateRangeType: null,
                         isFavorite: null,
                         hasMessages: null,
+                        hasAttachments: null,
                       });
                       setLocalFilters({
                         dateRange: null,
                         dateRangeType: null,
                         isFavorite: null,
                         hasMessages: null,
+                        hasAttachments: null,
                       });
                     }}
                     sx={{ textTransform: "none" }}
@@ -1232,6 +1249,81 @@ const ChatSidebar = ({
                   label={
                     <Typography variant="body2" sx={{ fontWeight: 500 }}>
                       Empty Chats
+                    </Typography>
+                  }
+                  sx={{ mx: 0 }}
+                />
+              </RadioGroup>
+            </Box>
+
+            <Divider />
+
+            {/* Attachments Filter */}
+            <Box>
+              <Stack
+                direction="row"
+                alignItems="center"
+                spacing={1}
+                sx={{ mb: 1.5 }}
+              >
+                <Typography sx={{ fontSize: 18 }}>📎</Typography>
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={600}
+                  color="text.primary"
+                >
+                  Attachments
+                </Typography>
+              </Stack>
+              <RadioGroup
+                value={
+                  localFilters.hasAttachments === null
+                    ? "all"
+                    : localFilters.hasAttachments
+                    ? "with"
+                    : "without"
+                }
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setLocalFilters((prev) => ({
+                    ...prev,
+                    hasAttachments: value === "all" ? null : value === "with",
+                  }));
+                }}
+                sx={{ ml: 0 }}
+              >
+                <FormControlLabel
+                  value="all"
+                  control={
+                    <Radio size="small" sx={{ color: "primary.main" }} />
+                  }
+                  label={
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      All Chats
+                    </Typography>
+                  }
+                  sx={{ mx: 0, mb: 0.5 }}
+                />
+                <FormControlLabel
+                  value="with"
+                  control={
+                    <Radio size="small" sx={{ color: "primary.main" }} />
+                  }
+                  label={
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      With Attachments
+                    </Typography>
+                  }
+                  sx={{ mx: 0, mb: 0.5 }}
+                />
+                <FormControlLabel
+                  value="without"
+                  control={
+                    <Radio size="small" sx={{ color: "primary.main" }} />
+                  }
+                  label={
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      Without Attachments
                     </Typography>
                   }
                   sx={{ mx: 0 }}

@@ -35,6 +35,9 @@ const InputArea = ({
   onCancelEdit,
   onOpenDocuments,
   documentCount = 0,
+  currentChatId,
+  isGuest,
+  selectedDocument,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -51,6 +54,20 @@ const InputArea = ({
 
   const handleSendClick = () => {
     onSendMessage();
+  };
+
+  const getReferenceText = () => {
+    if (!selectedDocument) return null;
+
+    const isImage =
+      selectedDocument.mime_type &&
+      selectedDocument.mime_type.startsWith("image/");
+
+    if (isImage) {
+      return `📷 Reference: I have attached an image "${selectedDocument.original_name}". Please analyze this image and answer my questions about it.`;
+    } else {
+      return `📄 Reference: I have attached a document "${selectedDocument.original_name}". Please use this document as context to answer my questions.`;
+    }
   };
 
   return (
@@ -82,6 +99,28 @@ const InputArea = ({
               sx={{
                 backgroundColor: "rgba(25, 118, 210, 0.08)",
                 borderColor: "#1976d2",
+              }}
+            />
+          </Box>
+        )}
+
+        {selectedDocument && (
+          <Box sx={{ mb: 1 }}>
+            <Chip
+              label={getReferenceText()}
+              variant="outlined"
+              color="success"
+              size="small"
+              sx={{
+                backgroundColor: "rgba(76, 175, 80, 0.08)",
+                borderColor: "#4caf50",
+                color: "#2e7d32",
+                fontWeight: 500,
+                maxWidth: "100%",
+                "& .MuiChip-label": {
+                  whiteSpace: "normal",
+                  textAlign: "left",
+                },
               }}
             />
           </Box>
@@ -127,30 +166,40 @@ const InputArea = ({
             }}
           />
           {/* Documents Button */}
-          <Tooltip title="Documents">
-            <Badge badgeContent={documentCount} color="primary">
-              <IconButton
-                onClick={onOpenDocuments}
-                disabled={isLoading}
-                sx={{
-                  backgroundColor: "#f5f5f5",
-                  color: "#666",
-                  width: isMobile ? 48 : 44,
-                  height: isMobile ? 48 : 44,
-                  transition: "all 0.2s ease",
-                  "&:hover": {
-                    backgroundColor: "#e0e0e0",
-                    transform: "scale(1.05)",
-                  },
-                  "&:disabled": {
-                    backgroundColor: "#e0e0e0",
-                    color: "#9e9e9e",
-                  },
-                }}
-              >
-                <FolderIcon sx={{ fontSize: 20 }} />
-              </IconButton>
-            </Badge>
+          <Tooltip
+            title={
+              isGuest
+                ? "Login to use document upload and chat about files"
+                : !currentChatId
+                ? "Select or create a chat to use documents"
+                : "Documents"
+            }
+          >
+            <span>
+              <Badge badgeContent={documentCount} color="primary" showZero>
+                <IconButton
+                  onClick={onOpenDocuments}
+                  disabled={isLoading || !currentChatId || isGuest}
+                  sx={{
+                    backgroundColor: "#f5f5f5",
+                    color: "#666",
+                    width: isMobile ? 48 : 44,
+                    height: isMobile ? 48 : 44,
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      backgroundColor: "#e0e0e0",
+                      transform: "scale(1.05)",
+                    },
+                    "&:disabled": {
+                      backgroundColor: "#e0e0e0",
+                      color: "#9e9e9e",
+                    },
+                  }}
+                >
+                  <FolderIcon sx={{ fontSize: 20 }} />
+                </IconButton>
+              </Badge>
+            </span>
           </Tooltip>
           <IconButton
             onClick={handleSendClick}
