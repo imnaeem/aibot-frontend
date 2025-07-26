@@ -175,23 +175,25 @@ const ChatHeader = ({
           </Stack>
 
           {/* Right Section: Model Selector + Documents Button */}
-          <Stack
-            direction="row"
-            spacing={1}
-            alignItems="center"
-            sx={{
-              flex: 0,
-              position: "absolute",
-              right: 0,
-              zIndex: 1,
-            }}
-          >
-            <ModelSelector
-              selectedModel={selectedModel}
-              onModelChange={onModelChange}
-              isMobile={isMobile}
-            />
-          </Stack>
+          {!isMobile && (
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              sx={{
+                flex: 0,
+                position: "absolute",
+                right: 0,
+                zIndex: 1,
+              }}
+            >
+              <ModelSelector
+                selectedModel={selectedModel}
+                onModelChange={onModelChange}
+                isMobile={isMobile}
+              />
+            </Stack>
+          )}
         </Stack>
 
         {/* Mobile Model Selector */}
