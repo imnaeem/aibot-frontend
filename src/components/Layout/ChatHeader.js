@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import { Menu as MenuIcon, Schedule as TimeIcon } from "@mui/icons-material";
 import { formatTimestamp } from "../../utils/formatters";
+import ModelSelector from "../Chat/ModelSelector";
 
 const ChatHeader = ({
   sidebarOpen,
@@ -21,6 +22,8 @@ const ChatHeader = ({
   messagesCount,
   isGuest,
   isLoadingMessages,
+  selectedModel,
+  onModelChange,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -38,14 +41,24 @@ const ChatHeader = ({
     >
       <Container
         maxWidth={sidebarOpen && !isMobile ? "lg" : "md"}
-        sx={{ transition: "all 0.2s ease" }}
+        sx={{
+          transition: "all 0.2s ease",
+          position: "relative",
+          pr: isMobile ? 2 : 4, // Extra padding for fixed right section
+        }}
       >
         <Stack
           direction="row"
-          justifyContent="space-between"
           alignItems="center"
+          sx={{ width: "100%", position: "relative" }}
         >
-          <Stack direction="row" alignItems="center" spacing={isMobile ? 1 : 2}>
+          {/* Left Section: Menu + Title */}
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={isMobile ? 1 : 2}
+            sx={{ flex: 1, minWidth: 0, mr: 2 }}
+          >
             {(!sidebarOpen || isMobile) && (
               <IconButton
                 onClick={() => setSidebarOpen(true)}
@@ -67,14 +80,26 @@ const ChatHeader = ({
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
-                maxWidth: isMobile ? "200px" : "none",
+                maxWidth: isMobile ? "140px" : "none",
               }}
             >
               {currentChat?.title || "Start a new conversation"}
             </Typography>
           </Stack>
 
-          <Stack direction="row" spacing={1} alignItems="center">
+          {/* Center Section: Dynamic Status Chips */}
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            sx={{
+              flex: 0,
+              position: "absolute",
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 1,
+            }}
+          >
             {isGuest && (
               <Chip
                 label="Guest Mode"
@@ -123,7 +148,31 @@ const ChatHeader = ({
                 }}
               />
             )}
+          </Stack>
 
+          {/* Fixed Right Section: Model Selector + Time */}
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            sx={{
+              position: "absolute",
+              right: 0,
+              top: "50%",
+              transform: "translateY(-50%)",
+              zIndex: 2,
+            }}
+          >
+            {/* Model Selector (Desktop only) */}
+            {!isMobile && currentChat && (
+              <ModelSelector
+                selectedModel={selectedModel}
+                onModelChange={onModelChange}
+                disabled={isStreaming}
+              />
+            )}
+
+            {/* Time Display */}
             {messagesCount > 0 && (
               <Typography
                 variant="caption"
@@ -132,6 +181,8 @@ const ChatHeader = ({
                   display: "flex",
                   alignItems: "center",
                   gap: 0.5,
+                  whiteSpace: "nowrap",
+                  minWidth: "100px",
                 }}
               >
                 <TimeIcon sx={{ fontSize: 14 }} />
@@ -140,6 +191,37 @@ const ChatHeader = ({
             )}
           </Stack>
         </Stack>
+
+        {/* Mobile Model Selector */}
+        {isMobile && currentChat && (
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            sx={{ mt: 1.5, px: 0.5 }}
+          >
+            <ModelSelector
+              selectedModel={selectedModel}
+              onModelChange={onModelChange}
+              disabled={isStreaming}
+            />
+            {messagesCount > 0 && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <TimeIcon sx={{ fontSize: 14 }} />
+                {formatTimestamp(currentChat?.updatedAt)}
+              </Typography>
+            )}
+          </Stack>
+        )}
       </Container>
     </Paper>
   );

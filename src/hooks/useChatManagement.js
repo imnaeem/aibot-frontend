@@ -26,28 +26,62 @@ export const useChatManagement = (
     return chats.find((chat) => chat.id === currentChatId);
   }, [chats, currentChatId]);
 
-  const createNewChat = useCallback(async () => {
-    try {
-      if (createSupabaseChat) {
-        // Use Supabase to create chat
-        const newChat = await createSupabaseChat("New Chat");
-        flushSync(() => {
-          // Ensure the chat is in local state immediately
-          setChats((prev) => {
-            // Check if chat already exists to avoid duplicates
-            const exists = prev.some((chat) => chat.id === newChat.id);
-            if (!exists) {
-              // Ensure the new chat has messagesLoaded set to true for immediate use
-              const chatWithFlags = { ...newChat, messagesLoaded: true };
-              return [chatWithFlags, ...prev];
-            }
-            return prev;
-          });
-          setCurrentChatIdWithURL(newChat.id);
+  const createNewChat = useCallback(
+    async (selectedModel = "llama-2-7b") => {
+      try {
+        console.log("🔍 createNewChat called with:", {
+          selectedModel,
+          hasCreateSupabaseChat: !!createSupabaseChat,
         });
-        return newChat;
-      } else {
-        // Fallback to local storage method
+        if (createSupabaseChat) {
+          console.log("✅ Using Supabase chat creation");
+          // Use Supabase to create chat
+          const newChat = await createSupabaseChat("New Chat", selectedModel);
+          flushSync(() => {
+            // Ensure the chat is in local state immediately
+            setChats((prev) => {
+              // Check if chat already exists to avoid duplicates
+              const exists = prev.some((chat) => chat.id === newChat.id);
+              if (!exists) {
+                // Ensure the new chat has messagesLoaded set to true for immediate use
+                const chatWithFlags = { ...newChat, messagesLoaded: true };
+                return [chatWithFlags, ...prev];
+              }
+              return prev;
+            });
+            setCurrentChatIdWithURL(newChat.id);
+          });
+          return newChat;
+        } else {
+          console.log(
+            "⚠️ Falling back to local storage method - createSupabaseChat is not available"
+          );
+          // Fallback to local storage method
+          const newChatId = Date.now().toString();
+          const newChat = {
+            id: newChatId,
+            title: "New Chat",
+            messages: [],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            isFavorite: false,
+            selectedModel: selectedModel,
+            messagesLoaded: true,
+          };
+
+          flushSync(() => {
+            setChats((prev) => [newChat, ...prev]);
+            setCurrentChatIdWithURL(newChatId);
+          });
+
+          return newChat;
+        }
+      } catch (error) {
+        console.error(
+          "❌ Error creating new chat, falling back to local:",
+          error
+        );
+        // Fallback to local method if Supabase fails
         const newChatId = Date.now().toString();
         const newChat = {
           id: newChatId,
@@ -56,6 +90,7 @@ export const useChatManagement = (
           createdAt: new Date(),
           updatedAt: new Date(),
           isFavorite: false,
+          selectedModel: selectedModel, // Add the missing selectedModel
           messagesLoaded: true,
         };
 
@@ -66,28 +101,9 @@ export const useChatManagement = (
 
         return newChat;
       }
-    } catch (error) {
-      console.error("Error creating new chat:", error);
-      // Fallback to local method if Supabase fails
-      const newChatId = Date.now().toString();
-      const newChat = {
-        id: newChatId,
-        title: "New Chat",
-        messages: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isFavorite: false,
-        messagesLoaded: true,
-      };
-
-      flushSync(() => {
-        setChats((prev) => [newChat, ...prev]);
-        setCurrentChatIdWithURL(newChatId);
-      });
-
-      return newChat;
-    }
-  }, [setChats, setCurrentChatIdWithURL, createSupabaseChat]);
+    },
+    [setChats, setCurrentChatIdWithURL, createSupabaseChat]
+  );
 
   const deleteChat = useCallback(
     async (chatId) => {

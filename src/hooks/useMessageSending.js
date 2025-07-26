@@ -12,7 +12,8 @@ export const useMessageSending = (
   updateChatTitle,
   updateChatMessages,
   getCurrentChat,
-  addSupabaseMessage = null
+  addSupabaseMessage = null,
+  selectedModel = "llama-2-7b"
 ) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -92,7 +93,7 @@ export const useMessageSending = (
       updateChatMessages(chatId, messagesWithAssistant);
 
       try {
-        const response = await sendMessageStream(userMessage);
+        const response = await sendMessageStream(userMessage, selectedModel);
 
         // Keep track of accumulated content
         let accumulatedContent = "";

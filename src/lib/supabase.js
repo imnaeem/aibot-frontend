@@ -159,20 +159,27 @@ export const getUserChatsWithMessages = async (userId) => {
   return { data, error };
 };
 
-export const createChat = async (userId, title) => {
+export const createChat = async (
+  userId,
+  title,
+  selectedModel = "llama-2-7b"
+) => {
+  console.log("🔍 createChat called with:", { userId, title, selectedModel });
+
   const { data, error } = await supabase
     .from("chats")
     .insert([
       {
         user_id: userId,
         title,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        selected_model: selectedModel,
+        // Remove manual timestamps - let database defaults handle it
       },
     ])
     .select()
     .single();
 
+  console.log("📊 createChat result:", { data, error });
   return { data, error };
 };
 

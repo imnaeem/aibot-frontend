@@ -1,13 +1,17 @@
 import { API_BASE_URL, ENDPOINTS } from "../utils/constants";
 
 // Send message to streaming endpoint
-export const sendMessageStream = async (message) => {
+export const sendMessageStream = async (message, model = "llama-2-7b") => {
   const response = await fetch(`${API_BASE_URL}${ENDPOINTS.CHAT_STREAM}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify({
+      message,
+      model,
+      stream: true,
+    }),
   });
 
   if (!response.ok) {
@@ -18,13 +22,17 @@ export const sendMessageStream = async (message) => {
 };
 
 // Send message to non-streaming endpoint
-export const sendMessage = async (message) => {
+export const sendMessage = async (message, model = "llama-2-7b") => {
   const response = await fetch(`${API_BASE_URL}${ENDPOINTS.CHAT}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify({
+      message,
+      model,
+      stream: false,
+    }),
   });
 
   if (!response.ok) {
