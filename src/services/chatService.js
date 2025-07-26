@@ -1,7 +1,11 @@
 import { API_BASE_URL, ENDPOINTS } from "../utils/constants";
 
 // Send message to streaming endpoint
-export const sendMessageStream = async (message, model = "llama-2-7b") => {
+export const sendMessageStream = async (
+  message,
+  model = "llama-2-7b",
+  documentContext = null
+) => {
   const response = await fetch(`${API_BASE_URL}${ENDPOINTS.CHAT_STREAM}`, {
     method: "POST",
     headers: {
@@ -11,6 +15,7 @@ export const sendMessageStream = async (message, model = "llama-2-7b") => {
       message,
       model,
       stream: true,
+      documentContext,
     }),
   });
 
@@ -98,4 +103,56 @@ export const processStreamingResponse = async (
     console.error("Error reading stream:", error);
     onError(error);
   }
+};
+
+export const uploadFile = async (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/upload`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Upload failed: ${response.statusText}`);
+  }
+
+  return await response.json();
+};
+
+export const getDocumentContent = async (documentId) => {
+  const response = await fetch(`${API_BASE_URL}/upload/content/${documentId}`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to get document content: ${response.statusText}`);
+  }
+
+  return await response.json();
+};
+
+// Process document (extract text from uploaded file)
+export const processDocument = async (documentId) => {
+  const response = await fetch(`${API_BASE_URL}/upload/process/${documentId}`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to process document: ${response.statusText}`);
+  }
+
+  return await response.json();
+};
+
+// Get unprocessed documents for a user
+export const getUnprocessedDocuments = async (userId) => {
+  const response = await fetch(`${API_BASE_URL}/upload/unprocessed/${userId}`);
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to get unprocessed documents: ${response.statusText}`
+    );
+  }
+
+  return await response.json();
 };

@@ -49,6 +49,21 @@ CREATE TABLE public.folders (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- Documents table for file uploads
+CREATE TABLE public.documents (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  chat_id UUID REFERENCES public.chats(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
+  filename TEXT NOT NULL,
+  original_name TEXT NOT NULL,
+  file_path TEXT NOT NULL,
+  file_size BIGINT NOT NULL,
+  mime_type TEXT NOT NULL,
+  extracted_text TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- Add folder_id foreign key to chats
 ALTER TABLE public.chats 
 ADD CONSTRAINT chats_folder_id_fkey 
@@ -59,6 +74,7 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chats ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.folders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
 
 -- Users can only see their own data
 CREATE POLICY "Users can view own profile" ON public.users
@@ -106,12 +122,28 @@ CREATE POLICY "Users can update own folders" ON public.folders
 CREATE POLICY "Users can delete own folders" ON public.folders
   FOR DELETE USING (auth.uid() = user_id);
 
+-- Documents policies
+CREATE POLICY "Users can view own documents" ON public.documents
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own documents" ON public.documents
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own documents" ON public.documents
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own documents" ON public.documents
+  FOR DELETE USING (auth.uid() = user_id);
+
 -- Create indexes for better performance
 CREATE INDEX idx_chats_user_id ON public.chats(user_id);
 CREATE INDEX idx_chats_updated_at ON public.chats(updated_at DESC);
 CREATE INDEX idx_messages_chat_id ON public.messages(chat_id);
 CREATE INDEX idx_messages_timestamp ON public.messages(timestamp);
 CREATE INDEX idx_folders_user_id ON public.folders(user_id);
+CREATE INDEX idx_documents_chat_id ON public.documents(chat_id);
+CREATE INDEX idx_documents_user_id ON public.documents(user_id);
+CREATE INDEX idx_documents_created_at ON public.documents(created_at DESC);
 
 -- Function to automatically create user profile
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -142,4 +174,7 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON public.users
   FOR EACH ROW EXECUTE PROCEDURE public.update_updated_at_column();
 
 CREATE TRIGGER update_chats_updated_at BEFORE UPDATE ON public.chats
+  FOR EACH ROW EXECUTE PROCEDURE public.update_updated_at_column();
+
+CREATE TRIGGER update_documents_updated_at BEFORE UPDATE ON public.documents
   FOR EACH ROW EXECUTE PROCEDURE public.update_updated_at_column(); 

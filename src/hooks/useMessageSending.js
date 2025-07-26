@@ -13,7 +13,8 @@ export const useMessageSending = (
   updateChatMessages,
   getCurrentChat,
   addSupabaseMessage = null,
-  selectedModel = "llama-2-7b"
+  selectedModel = "llama-2-7b",
+  selectedDocument = null
 ) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -93,7 +94,21 @@ export const useMessageSending = (
       updateChatMessages(chatId, messagesWithAssistant);
 
       try {
-        const response = await sendMessageStream(userMessage, selectedModel);
+        // Prepare document context if available
+        const documentContext =
+          selectedDocument && selectedDocument.extracted_text
+            ? {
+                name: selectedDocument.original_name,
+                content: selectedDocument.extracted_text,
+                type: selectedDocument.mime_type,
+              }
+            : null;
+
+        const response = await sendMessageStream(
+          userMessage,
+          selectedModel,
+          documentContext
+        );
 
         // Keep track of accumulated content
         let accumulatedContent = "";
@@ -181,6 +196,7 @@ export const useMessageSending = (
       updateChatMessages,
       getCurrentChat,
       addSupabaseMessage,
+      selectedDocument,
     ]
   );
 
