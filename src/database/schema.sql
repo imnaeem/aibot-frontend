@@ -23,7 +23,7 @@ CREATE TABLE public.chats (
   title TEXT NOT NULL DEFAULT 'New Chat',
   is_favorite BOOLEAN DEFAULT false,
   folder_id UUID,
-  model_used TEXT DEFAULT 'llama3-8b-8192',
+  selected_model TEXT DEFAULT 'llama-2-7b',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );

@@ -38,6 +38,7 @@ export const useSupabaseChats = () => {
         createdAt: new Date(supabaseChat.created_at),
         updatedAt: new Date(supabaseChat.updated_at),
         isFavorite: supabaseChat.is_favorite || false,
+        selectedModel: supabaseChat.selected_model || "llama-2-7b",
         messagesLoaded: includeMessages, // Track if messages have been loaded
       };
     },
@@ -124,23 +125,46 @@ export const useSupabaseChats = () => {
 
   // Create new chat in Supabase
   const createNewChat = useCallback(
-    async (title = "New Chat") => {
+    async (title = "New Chat", selectedModel = "llama-2-7b") => {
+      console.log("🔍 useSupabaseChats createNewChat called:", {
+        title,
+        selectedModel,
+        userId: user?.id,
+        hasUser: !!user,
+      });
+
       if (!user?.id) {
+        console.error(
+          "❌ User not authenticated in useSupabaseChats createNewChat"
+        );
         throw new Error("User not authenticated");
       }
 
       try {
-        const { data, error: createError } = await createChat(user.id, title);
+        console.log("✅ Creating Supabase chat...");
+        const { data, error: createError } = await createChat(
+          user.id,
+          title,
+          selectedModel
+        );
 
         if (createError) {
+          console.error("❌ Supabase createChat error:", createError);
+          console.error("❌ Error details:", {
+            message: createError.message,
+            details: createError.details,
+            hint: createError.hint,
+            code: createError.code,
+          });
           throw createError;
         }
 
+        console.log("✅ Supabase chat created successfully:", data);
         const newChat = transformChatData({ ...data, messages: [] }, true); // Set messagesLoaded to true for new chats
         setChats((prev) => [newChat, ...prev]);
         return newChat;
       } catch (err) {
-        console.error("Error creating chat:", err);
+        console.error("❌ Error creating chat:", err);
         setError(err.message);
         throw err;
       }
@@ -159,6 +183,10 @@ export const useSupabaseChats = () => {
 
       if (updates.isFavorite !== undefined) {
         supabaseUpdates.is_favorite = updates.isFavorite;
+      }
+
+      if (updates.selectedModel !== undefined) {
+        supabaseUpdates.selected_model = updates.selectedModel;
       }
 
       const { data, error: updateError } = await updateChat(

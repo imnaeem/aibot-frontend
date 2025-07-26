@@ -13,7 +13,7 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import theme from "./utils/theme";
-import { SIDEBAR_WIDTH, STORAGE_KEY } from "./utils/constants";
+import { SIDEBAR_WIDTH, STORAGE_KEY, DEFAULT_MODEL } from "./utils/constants";
 import { getChatIdFromURL } from "./utils/formatters";
 import { useSupabaseChats } from "./hooks/useSupabaseChats";
 import { useLocalStorage } from "./hooks/useLocalStorage";
@@ -80,11 +80,20 @@ function ChatApp() {
     : supabaseChats;
   const [inputValue, setInputValue] = useState("");
   const [editingMessage, setEditingMessage] = useState(null); // Track which message we're editing
+  const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
   const textareaRef = useRef(null);
   const editInputRef = useRef(null);
 
   const { currentChatId, setCurrentChatIdWithURL, clearChatFromURL } =
     useUrlParams();
+
+  // Debug logging
+  console.log("🔍 App.js - Chat Management Setup:", {
+    isGuest,
+    hasCreateNewSupabaseChat: !!createNewSupabaseChat,
+    user: user?.id || "no-user",
+  });
+
   const chatManagement = useChatManagement(
     chats,
     setChats,
@@ -101,13 +110,25 @@ function ChatApp() {
           updateMessage: updateSupabaseMessage,
         }
   );
+
+  // Load model from current chat when chat changes
+  useEffect(() => {
+    const currentChat = chatManagement.getCurrentChat();
+    if (currentChat && currentChat.selectedModel) {
+      setSelectedModel(currentChat.selectedModel);
+    } else {
+      setSelectedModel(DEFAULT_MODEL);
+    }
+  }, [currentChatId, chatManagement]);
+
   const messageSending = useMessageSending(
     currentChatId,
     chatManagement.createNewChat,
     chatManagement.updateChatTitle,
     chatManagement.updateChatMessages,
     chatManagement.getCurrentChat,
-    isGuest ? null : addSupabaseMessage // No Supabase message saving for guests
+    isGuest ? null : addSupabaseMessage, // No Supabase message saving for guests
+    selectedModel
   );
   const uiState = useUIState();
 
@@ -143,9 +164,14 @@ function ChatApp() {
     }
   }, [currentChatId, chats, chatManagement]);
 
+  // Create new chat with current model
+  const handleCreateNewChat = useCallback(async () => {
+    return await chatManagement.createNewChat(selectedModel);
+  }, [chatManagement.createNewChat, selectedModel]);
+
   // Keyboard shortcuts
   useKeyboardShortcuts({
-    onNewChat: chatManagement.createNewChat,
+    onNewChat: handleCreateNewChat,
     onToggleSidebar: uiState.toggleSidebar,
     onFocusInput: () => textareaRef.current?.focus(),
     onCancelEdit: chatManagement.cancelEditingChat,
@@ -222,6 +248,35 @@ function ChatApp() {
     setEditingMessage(null);
     setInputValue("");
   };
+
+  const handleModelChange = useCallback(
+    async (modelId) => {
+      setSelectedModel(modelId);
+
+      // Persist model to current chat if one exists
+      const currentChat = chatManagement.getCurrentChat();
+      if (currentChatId && currentChat) {
+        try {
+          // Update local state immediately
+          setChats((prev) =>
+            prev.map((chat) =>
+              chat.id === currentChatId
+                ? { ...chat, selectedModel: modelId, updatedAt: new Date() }
+                : chat
+            )
+          );
+
+          // Update in database if available
+          if (updateSupabaseChat && !isGuest) {
+            await updateSupabaseChat(currentChatId, { selectedModel: modelId });
+          }
+        } catch (error) {
+          console.error("Failed to save model to chat:", error);
+        }
+      }
+    },
+    [currentChatId, chatManagement, setChats, updateSupabaseChat, isGuest]
+  );
 
   const handleMenuClick = useCallback(
     (event, chatId) => {
@@ -314,7 +369,7 @@ function ChatApp() {
         loadingMessages={loadingMessages}
         currentChatId={currentChatId}
         onSelectChat={handleSelectChat}
-        onCreateNewChat={chatManagement.createNewChat}
+        onCreateNewChat={handleCreateNewChat}
         onDeleteChat={chatManagement.deleteChat}
         onToggleFavorite={chatManagement.toggleFavorite}
         editingChatId={chatManagement.editingChatId}
@@ -367,6 +422,8 @@ function ChatApp() {
           messagesCount={messages.length}
           isGuest={isGuest}
           isLoadingMessages={currentChatId && loadingMessages === currentChatId}
+          selectedModel={selectedModel}
+          onModelChange={handleModelChange}
         />
 
         {/* Messages */}
