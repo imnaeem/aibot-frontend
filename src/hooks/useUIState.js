@@ -6,6 +6,9 @@ export const useUIState = () => {
   const [copiedMessageId, setCopiedMessageId] = useState(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
 
+  // Store the reset function from ChatSidebar
+  const [sidebarResetFunction, setSidebarResetFunction] = useState(null);
+
   // Menu state
   const [menuAnchor, setMenuAnchor] = useState(null);
   const [selectedChatForMenu, setSelectedChatForMenu] = useState(null);
@@ -34,6 +37,18 @@ export const useUIState = () => {
     setSearchQuery("");
   }, []);
 
+  const resetFilters = useCallback(() => {
+    setSearchQuery("");
+    // Call the sidebar reset function if available
+    if (sidebarResetFunction) {
+      sidebarResetFunction();
+    }
+  }, [sidebarResetFunction]);
+
+  const setResetFunction = useCallback((resetFn) => {
+    setSidebarResetFunction(() => resetFn);
+  }, []);
+
   return {
     // Sidebar state
     sidebarOpen,
@@ -43,6 +58,8 @@ export const useUIState = () => {
     searchQuery,
     setSearchQuery,
     clearSearch,
+    resetFilters,
+    setResetFunction,
 
     // Copy state
     copiedMessageId,
