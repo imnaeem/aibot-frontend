@@ -1,6 +1,7 @@
 {
-  "name": "frontend",
+  "name": "aibot-frontend",
   "version": "0.1.0",
+  "description": "A modern AI chatbot frontend supporting multiple AI models with real-time streaming, document processing, and user authentication",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -25,8 +26,33 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "lint": "eslint src/ --ext .js,.jsx --max-warnings 0",
+    "lint:fix": "eslint src/ --ext .js,.jsx --fix",
+    "type-check": "tsc --noEmit",
+    "dev": "npm start"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/imnaeem/aibot-frontend.git"
+  },
+  "keywords": [
+    "ai",
+    "chatbot",
+    "react",
+    "frontend",
+    "llama",
+    "ollama",
+    "machine-learning",
+    "supabase",
+    "material-ui"
+  ],
+  "author": "imnaeem",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/imnaeem/aibot-frontend/issues"
+  },
+  "homepage": "https://github.com/imnaeem/aibot-frontend#readme",
   "eslintConfig": {
     "extends": [
       "react-app",
