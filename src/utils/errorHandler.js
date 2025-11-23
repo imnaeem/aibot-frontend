@@ -3,6 +3,9 @@
  * Logs actual errors to console for debugging while showing clean messages to users
  */
 
+// Configuration constants
+const MAX_USER_FRIENDLY_MESSAGE_LENGTH = 100;
+
 /**
  * Maps common error messages to user-friendly versions
  */
@@ -114,7 +117,7 @@ export const getUserFriendlyError = (error) => {
   }
 
   // If error message is short and seems user-friendly already, use it
-  if (errorMessage.length < 100 && !lowerMessage.includes("error")) {
+  if (errorMessage.length < MAX_USER_FRIENDLY_MESSAGE_LENGTH && !lowerMessage.includes("error")) {
     return errorMessage;
   }
 

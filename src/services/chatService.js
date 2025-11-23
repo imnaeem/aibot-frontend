@@ -28,7 +28,7 @@ export const sendMessageStream = async (
 
     return response;
   } catch (error) {
-    console.error("Error in sendMessageStream:", error);
+    // Error already logged by handleApiError, just re-throw
     throw error;
   }
 };
@@ -55,7 +55,7 @@ export const sendMessage = async (message, model = "llama-2-7b") => {
 
     return response.json();
   } catch (error) {
-    console.error("Error in sendMessage:", error);
+    // Error already logged by handleApiError, just re-throw
     throw error;
   }
 };
@@ -72,7 +72,7 @@ export const getModels = async () => {
 
     return response.json();
   } catch (error) {
-    console.error("Error in getModels:", error);
+    // Error already logged by handleApiError, just re-throw
     throw error;
   }
 };
@@ -141,7 +141,7 @@ export const uploadFile = async (file) => {
 
     return await response.json();
   } catch (error) {
-    console.error("Error in uploadFile:", error);
+    // Error already logged by handleApiError, just re-throw
     throw error;
   }
 };
@@ -157,7 +157,7 @@ export const getDocumentContent = async (documentId) => {
 
     return await response.json();
   } catch (error) {
-    console.error("Error in getDocumentContent:", error);
+    // Error already logged by handleApiError, just re-throw
     throw error;
   }
 };
@@ -176,7 +176,7 @@ export const processDocument = async (documentId) => {
 
     return await response.json();
   } catch (error) {
-    console.error("Error in processDocument:", error);
+    // Error already logged by handleApiError, just re-throw
     throw error;
   }
 };
@@ -193,7 +193,7 @@ export const getUnprocessedDocuments = async (userId) => {
 
     return await response.json();
   } catch (error) {
-    console.error("Error in getUnprocessedDocuments:", error);
+    // Error already logged by handleApiError, just re-throw
     throw error;
   }
 };
