@@ -20,6 +20,7 @@ import {
 } from "@mui/icons-material";
 import { signIn, signUp, supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
+import { handleError } from "../../utils/errorHandler";
 
 const AuthPage = () => {
   const { continueAsGuest, preferredAuthTab } = useAuth();
@@ -70,7 +71,11 @@ const AuthPage = () => {
       if (activeTab === 0) {
         // Sign In
         const { data, error } = await signIn(formData.email, formData.password);
-        if (error) throw error;
+        if (error) {
+          const friendlyError = handleError(error, "Sign In");
+          setError(friendlyError);
+          return;
+        }
 
         if (data.user) {
           // User signed in successfully
@@ -86,11 +91,13 @@ const AuthPage = () => {
       } else {
         // Sign Up
         if (formData.password !== formData.confirmPassword) {
-          throw new Error("Passwords do not match");
+          setError("Passwords do not match");
+          return;
         }
 
         if (formData.password.length < 6) {
-          throw new Error("Password must be at least 6 characters");
+          setError("Password must be at least 6 characters");
+          return;
         }
 
         const { data, error } = await signUp(
@@ -98,7 +105,11 @@ const AuthPage = () => {
           formData.password,
           formData.fullName.trim() || null
         );
-        if (error) throw error;
+        if (error) {
+          const friendlyError = handleError(error, "Sign Up");
+          setError(friendlyError);
+          return;
+        }
 
         if (data.user) {
           setSuccess(
@@ -114,7 +125,8 @@ const AuthPage = () => {
         }
       }
     } catch (error) {
-      setError(error.message);
+      const friendlyError = handleError(error, activeTab === 0 ? "Sign In" : "Sign Up");
+      setError(friendlyError);
     } finally {
       setLoading(false);
     }
@@ -129,9 +141,14 @@ const AuthPage = () => {
           redirectTo: process.env.REACT_APP_URI,
         },
       });
-      if (error) throw error;
+      if (error) {
+        const friendlyError = handleError(error, "Social Authentication");
+        setError(friendlyError);
+        setLoading(false);
+      }
     } catch (error) {
-      setError(error.message);
+      const friendlyError = handleError(error, "Social Authentication");
+      setError(friendlyError);
       setLoading(false);
     }
   };

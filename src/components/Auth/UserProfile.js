@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import { Person as PersonIcon } from "@mui/icons-material";
 import { supabase } from "../../lib/supabase";
+import { handleError } from "../../utils/errorHandler";
 
 const UserProfile = ({ open, onClose, user, updateUser }) => {
   const [loading, setLoading] = useState(false);
@@ -72,7 +73,8 @@ const UserProfile = ({ open, onClose, user, updateUser }) => {
         setSuccess("");
       }, 2000);
     } catch (error) {
-      setError(error.message || "Failed to update profile");
+      const friendlyError = handleError(error, "update profile");
+      setError(friendlyError);
     } finally {
       setLoading(false);
     }
