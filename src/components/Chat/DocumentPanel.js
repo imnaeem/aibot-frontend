@@ -316,9 +316,9 @@ const DocumentPanel = ({
 
         onSelectDocument(updatedDocument);
       } catch (error) {
-        console.error("Error loading document content:", error);
-        // Show error to user
-        alert(`Failed to process document: ${error.message}`);
+        const friendlyError = handleError(error, "process document");
+        setError(friendlyError);
+        setSnackbarOpen(true);
         // Do not select the document if processing fails
       } finally {
         setProcessingDocumentId(null);
