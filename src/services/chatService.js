@@ -1,4 +1,5 @@
 import { API_BASE_URL, ENDPOINTS } from "../utils/constants";
+import { handleApiError } from "../utils/errorHandler";
 
 // Send message to streaming endpoint
 export const sendMessageStream = async (
@@ -6,56 +7,74 @@ export const sendMessageStream = async (
   model = "llama-2-7b",
   documentContext = null
 ) => {
-  const response = await fetch(`${API_BASE_URL}${ENDPOINTS.CHAT_STREAM}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      message,
-      model,
-      stream: true,
-      documentContext,
-    }),
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}${ENDPOINTS.CHAT_STREAM}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message,
+        model,
+        stream: true,
+        documentContext,
+      }),
+    });
 
-  if (!response.ok) {
-    throw new Error("Failed to get response from server");
+    if (!response.ok) {
+      const errorMessage = await handleApiError(response, "sendMessageStream");
+      throw new Error(errorMessage);
+    }
+
+    return response;
+  } catch (error) {
+    console.error("Error in sendMessageStream:", error);
+    throw error;
   }
-
-  return response;
 };
 
 // Send message to non-streaming endpoint
 export const sendMessage = async (message, model = "llama-2-7b") => {
-  const response = await fetch(`${API_BASE_URL}${ENDPOINTS.CHAT}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      message,
-      model,
-      stream: false,
-    }),
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}${ENDPOINTS.CHAT}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message,
+        model,
+        stream: false,
+      }),
+    });
 
-  if (!response.ok) {
-    throw new Error("Failed to get response from server");
+    if (!response.ok) {
+      const errorMessage = await handleApiError(response, "sendMessage");
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in sendMessage:", error);
+    throw error;
   }
-
-  return response.json();
 };
 
 // Get available models
 export const getModels = async () => {
-  const response = await fetch(`${API_BASE_URL}${ENDPOINTS.MODELS}`);
+  try {
+    const response = await fetch(`${API_BASE_URL}${ENDPOINTS.MODELS}`);
 
-  if (!response.ok) {
-    throw new Error("Failed to get models");
+    if (!response.ok) {
+      const errorMessage = await handleApiError(response, "getModels");
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in getModels:", error);
+    throw error;
   }
-
-  return response.json();
 };
 
 // Process streaming response
@@ -106,53 +125,75 @@ export const processStreamingResponse = async (
 };
 
 export const uploadFile = async (file) => {
-  const formData = new FormData();
-  formData.append("file", file);
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/upload`, {
-    method: "POST",
-    body: formData,
-  });
+    const response = await fetch(`${API_BASE_URL}/upload`, {
+      method: "POST",
+      body: formData,
+    });
 
-  if (!response.ok) {
-    throw new Error(`Upload failed: ${response.statusText}`);
+    if (!response.ok) {
+      const errorMessage = await handleApiError(response, "uploadFile");
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error in uploadFile:", error);
+    throw error;
   }
-
-  return await response.json();
 };
 
 export const getDocumentContent = async (documentId) => {
-  const response = await fetch(`${API_BASE_URL}/upload/content/${documentId}`);
+  try {
+    const response = await fetch(`${API_BASE_URL}/upload/content/${documentId}`);
 
-  if (!response.ok) {
-    throw new Error(`Failed to get document content: ${response.statusText}`);
+    if (!response.ok) {
+      const errorMessage = await handleApiError(response, "getDocumentContent");
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error in getDocumentContent:", error);
+    throw error;
   }
-
-  return await response.json();
 };
 
 // Process document (extract text from uploaded file)
 export const processDocument = async (documentId) => {
-  const response = await fetch(`${API_BASE_URL}/upload/process/${documentId}`, {
-    method: "POST",
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}/upload/process/${documentId}`, {
+      method: "POST",
+    });
 
-  if (!response.ok) {
-    throw new Error(`Failed to process document: ${response.statusText}`);
+    if (!response.ok) {
+      const errorMessage = await handleApiError(response, "processDocument");
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error in processDocument:", error);
+    throw error;
   }
-
-  return await response.json();
 };
 
 // Get unprocessed documents for a user
 export const getUnprocessedDocuments = async (userId) => {
-  const response = await fetch(`${API_BASE_URL}/upload/unprocessed/${userId}`);
+  try {
+    const response = await fetch(`${API_BASE_URL}/upload/unprocessed/${userId}`);
 
-  if (!response.ok) {
-    throw new Error(
-      `Failed to get unprocessed documents: ${response.statusText}`
-    );
+    if (!response.ok) {
+      const errorMessage = await handleApiError(response, "getUnprocessedDocuments");
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error in getUnprocessedDocuments:", error);
+    throw error;
   }
-
-  return await response.json();
 };

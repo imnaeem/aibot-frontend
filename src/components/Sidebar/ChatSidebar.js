@@ -28,6 +28,8 @@ import {
   Badge,
   useTheme,
   useMediaQuery,
+  Alert,
+  Snackbar,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -49,6 +51,7 @@ import UserProfile from "../Auth/UserProfile";
 import { filterChats, groupChats } from "../../utils/formatters";
 import { SIDEBAR_WIDTH, CHAT_GROUPS } from "../../utils/constants";
 import { useAuth } from "../../contexts/AuthContext";
+import { handleError } from "../../utils/errorHandler";
 
 const ChatSidebar = ({
   sidebarOpen,
@@ -114,6 +117,10 @@ const ChatSidebar = ({
   // Database search results state
   const [searchResults, setSearchResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
+
+  // Error handling state
+  const [error, setError] = useState("");
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   // Database search effect
   useEffect(() => {
@@ -277,8 +284,9 @@ const ChatSidebar = ({
         setSelectedChats(new Set());
         setBulkSelectMode(false);
       } catch (error) {
-        console.error("Error bulk deleting chats:", error);
-        alert("Some chats could not be deleted. Please try again.");
+        const friendlyError = handleError(error, "bulk delete chats");
+        setError(friendlyError);
+        setSnackbarOpen(true);
       }
     }
   };
@@ -1424,6 +1432,22 @@ const ChatSidebar = ({
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Error Snackbar */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity="error"
+          sx={{ width: "100%" }}
+        >
+          {error}
+        </Alert>
+      </Snackbar>
     </Drawer>
   );
 };

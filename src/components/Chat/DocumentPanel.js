@@ -15,6 +15,8 @@ import {
   useTheme,
   useMediaQuery,
   Divider,
+  Alert,
+  Snackbar,
 } from "@mui/material";
 import {
   Description as DocumentIcon,
@@ -39,6 +41,7 @@ import {
   supabase,
 } from "../../lib/supabase";
 import { processDocument } from "../../services/chatService";
+import { handleError } from "../../utils/errorHandler";
 
 const getFileIcon = (mimeType) => {
   if (mimeType.includes("pdf"))
@@ -121,6 +124,8 @@ const DocumentPanel = ({
   const [uploading, setUploading] = useState(false);
   const [processingDocumentId, setProcessingDocumentId] = useState(null);
   const [deletingDocumentId, setDeletingDocumentId] = useState(null);
+  const [error, setError] = useState("");
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
   const fileInputRef = useRef();
 
   // Load documents for current chat
@@ -141,7 +146,9 @@ const DocumentPanel = ({
         onDocumentUpload({ count: (data || []).length });
       }
     } catch (error) {
-      console.error("Error loading documents:", error);
+      const friendlyError = handleError(error, "loadChatDocuments");
+      setError(friendlyError);
+      setSnackbarOpen(true);
     } finally {
       setLoading(false);
     }
@@ -185,8 +192,9 @@ const DocumentPanel = ({
 
       console.log("Document uploaded successfully:", newDocument);
     } catch (error) {
-      console.error("Upload failed:", error);
-      alert(`Upload failed: ${error.message}`);
+      const friendlyError = handleError(error, "handleFileUpload");
+      setError(friendlyError);
+      setSnackbarOpen(true);
     } finally {
       setUploading(false);
     }
@@ -219,7 +227,12 @@ const DocumentPanel = ({
         documentData
       );
       if (error || !newDocument || !newDocument.id) {
-        alert("Failed to create document record. Please try again.");
+        const friendlyError = handleError(
+          error || new Error("Failed to create document record"),
+          "handleFileChange"
+        );
+        setError(friendlyError);
+        setSnackbarOpen(true);
         return;
       }
 
@@ -233,8 +246,9 @@ const DocumentPanel = ({
 
       console.log("Document uploaded successfully:", newDocument);
     } catch (error) {
-      console.error("Upload failed:", error);
-      alert(`Upload failed: ${error.message}`);
+      const friendlyError = handleError(error, "handleFileChange");
+      setError(friendlyError);
+      setSnackbarOpen(true);
     } finally {
       setUploading(false);
       // After upload, reset file input so dialog can be reopened
@@ -263,8 +277,9 @@ const DocumentPanel = ({
 
       console.log("Document deleted successfully");
     } catch (error) {
-      console.error("Delete failed:", error);
-      alert(`Delete failed: ${error.message}`);
+      const friendlyError = handleError(error, "handleDeleteDocument");
+      setError(friendlyError);
+      setSnackbarOpen(true);
     } finally {
       setDeletingDocumentId(null);
     }
@@ -716,6 +731,22 @@ const DocumentPanel = ({
           )}
         </Box>
       </Box>
+
+      {/* Error Snackbar */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity="error"
+          sx={{ width: "100%" }}
+        >
+          {error}
+        </Alert>
+      </Snackbar>
     </>
   );
 };
