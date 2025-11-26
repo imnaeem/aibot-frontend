@@ -3,7 +3,7 @@ name: Keep Supabase Awake
 on:
   schedule:
     # every 10 minutes
-    - cron: '*/10 * * * *'
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -13,6 +13,11 @@ jobs:
       - name: Ping Supabase health endpoint
         run: |
           echo "Pinging $SUPABASE_PING_URL"
+          curl -fsS "$SUPABASE_PING_URL" || (echo "Ping failed"; exit 1)
+          curl -fsS "$SUPABASE_PING_URL" || (echo "Ping failed"; exit 1)
+          curl -fsS "$SUPABASE_PING_URL" || (echo "Ping failed"; exit 1)
+          curl -fsS "$SUPABASE_PING_URL" || (echo "Ping failed"; exit 1)
+          curl -fsS "$SUPABASE_PING_URL" || (echo "Ping failed"; exit 1)
           curl -fsS "$SUPABASE_PING_URL" || (echo "Ping failed"; exit 1)
         env:
           SUPABASE_PING_URL: ${{ secrets.SUPABASE_PING_URL }}
